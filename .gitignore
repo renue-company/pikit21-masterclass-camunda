@@ -1,0 +1,17 @@
+*.iml
+.idea/
+target/
+localrepo/
+executions/
+.flattened-pom.xml
+
+######################
+# Logs
+######################
+*.log*
+
+######################
+# Archives
+######################
+*.gz*
+*.zip*

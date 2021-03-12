@@ -1,0 +1,329 @@
+{
+	"info": {
+		"_postman_id": "8644462e-6302-474c-8b52-da00544fd3e6",
+		"name": "PikIT Camunda Masterclass",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Получен заказ",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/orderMsg?isPaymentOnSite=false",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"orderMsg"
+					],
+					"query": [
+						{
+							"key": "isPaymentOnSite",
+							"value": "false"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Оплата: Получена ссылка на оплату",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/acquiringSuccessMsg?acquiringLink=https://acquiring.example/b7ecf2be7e15&businessKey={{businessKey}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"acquiringSuccessMsg"
+					],
+					"query": [
+						{
+							"key": "acquiringLink",
+							"value": "https://acquiring.example/b7ecf2be7e15"
+						},
+						{
+							"key": "businessKey",
+							"value": "{{businessKey}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Оплата: Ошибка обработки запроса",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/receivedAcquiringError?errCode=0001&businessKey={{businessKey}}&errMsg=Сервис не доступен",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"receivedAcquiringError"
+					],
+					"query": [
+						{
+							"key": "errCode",
+							"value": "0001"
+						},
+						{
+							"key": "businessKey",
+							"value": "{{businessKey}}"
+						},
+						{
+							"key": "errMsg",
+							"value": "Сервис не доступен"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Получено событие по платежу",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/receivedPaymentInfo?paymentStatus=SUCCESS&businessKey={{businessKey}}&paymentValue=420&paymentCurrency=RUB",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"receivedPaymentInfo"
+					],
+					"query": [
+						{
+							"key": "paymentStatus",
+							"value": "SUCCESS"
+						},
+						{
+							"key": "businessKey",
+							"value": "{{businessKey}}"
+						},
+						{
+							"key": "paymentValue",
+							"value": "420"
+						},
+						{
+							"key": "paymentCurrency",
+							"value": "RUB"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Заказ передан в доставку",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/receivedOrderToDelivery?businessKey={{businessKey}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"receivedOrderToDelivery"
+					],
+					"query": [
+						{
+							"key": "businessKey",
+							"value": "{{businessKey}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Заказ доставлен",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/receivedOrderDelivered?businessKey={{businessKey}}&orderDeliveredDateTime=09-03-2021T13:01:00",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"receivedOrderDelivered"
+					],
+					"query": [
+						{
+							"key": "businessKey",
+							"value": "{{businessKey}}"
+						},
+						{
+							"key": "orderDeliveredDateTime",
+							"value": "09-03-2021T13:01:00"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Заказ оплачен клиентом",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/receivedCustomerPaid?paymentStatus=SUCCESS&businessKey={{businessKey}}&paymentValue=420&paymentCurrency=RUB",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"receivedCustomerPaid"
+					],
+					"query": [
+						{
+							"key": "paymentStatus",
+							"value": "SUCCESS"
+						},
+						{
+							"key": "businessKey",
+							"value": "{{businessKey}}"
+						},
+						{
+							"key": "paymentValue",
+							"value": "420"
+						},
+						{
+							"key": "paymentCurrency",
+							"value": "RUB"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Заказ НЕ оплачен клиентом",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/receivedCustomerNotPay?paymentStatus=TOXIC_CLIENT&businessKey={{businessKey}}&paymentValue=420&paymentCurrency=RUB",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"receivedCustomerNotPay"
+					],
+					"query": [
+						{
+							"key": "paymentStatus",
+							"value": "TOXIC_CLIENT"
+						},
+						{
+							"key": "businessKey",
+							"value": "{{businessKey}}"
+						},
+						{
+							"key": "paymentValue",
+							"value": "420"
+						},
+						{
+							"key": "paymentCurrency",
+							"value": "RUB"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Получен новый статус",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/receivedProductionStatus?productionStatus=PIZZA_GO_TO_OVEN&businessKey={{businessKey}}&productionStatusDateTime=09-03-2021T13:01:00",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"receivedProductionStatus"
+					],
+					"query": [
+						{
+							"key": "productionStatus",
+							"value": "PIZZA_GO_TO_OVEN"
+						},
+						{
+							"key": "businessKey",
+							"value": "{{businessKey}}"
+						},
+						{
+							"key": "productionStatusDateTime",
+							"value": "09-03-2021T13:01:00"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "businessKey",
+			"value": "REPLACE_ME"
+		}
+	]
+}

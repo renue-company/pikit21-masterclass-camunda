@@ -1,0 +1,994 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_18yi4cj" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.6.0">
+  <bpmn:collaboration id="PizzaOrderCollaboration">
+    <bpmn:participant id="Customer" name="Клиент" processRef="PizzaOrderByCustomer" />
+    <bpmn:participant id="SiteService" name="Клиентский компонент (frontend/ui/etc)" />
+    <bpmn:participant id="OrderService" name="Компонент заказов" processRef="PizzaOrder" />
+    <bpmn:participant id="Acquiring" name="Эквайринг" />
+    <bpmn:participant id="PromService" name="Производственный компонент" />
+    <bpmn:participant id="Courier" name="Курьер" />
+    <bpmn:participant id="CourierService" name="Курьерский компонент" />
+    <bpmn:messageFlow id="Flow_17uru3b" sourceRef="orderPizza" targetRef="SiteService" />
+    <bpmn:messageFlow id="Flow_0n8458v" sourceRef="SiteService" targetRef="startPizzaOrder" />
+    <bpmn:messageFlow id="Flow_1ab3q70" sourceRef="sendAcquiringLinkToClientService" targetRef="SiteService" />
+    <bpmn:messageFlow id="Flow_03woacl" sourceRef="sendRequestToAcquiring" targetRef="Acquiring" />
+    <bpmn:messageFlow id="Flow_12bn37k" sourceRef="Acquiring" targetRef="receivedAcquiringSuccess" />
+    <bpmn:messageFlow id="Flow_1pauxbl" sourceRef="Acquiring" targetRef="receivedAcquiringError" />
+    <bpmn:messageFlow id="Flow_07tug43" sourceRef="Acquiring" targetRef="receivedPaymentInfo" />
+    <bpmn:messageFlow id="Flow_0mo7787" sourceRef="SiteService" targetRef="directionToPaymentPage" />
+    <bpmn:messageFlow id="Flow_0amh2pn" sourceRef="payOnSite" targetRef="Acquiring" />
+    <bpmn:messageFlow id="Flow_1kh629l" sourceRef="sendOrderToExecution" targetRef="PromService" />
+    <bpmn:messageFlow id="Flow_06vq83o" sourceRef="PromService" targetRef="receivedOrderToDelivery" />
+    <bpmn:messageFlow id="Flow_1yyv5l7" sourceRef="payToCourier" targetRef="Courier" />
+    <bpmn:messageFlow id="Flow_1oe5fdj" sourceRef="PromService" targetRef="receivedProductionStatus" />
+    <bpmn:messageFlow id="Flow_0642a8v" sourceRef="CourierService" targetRef="receivedCustomerPaid" />
+    <bpmn:messageFlow id="Flow_0l2w34v" sourceRef="CourierService" targetRef="receivedCustomerNotPay" />
+    <bpmn:messageFlow id="Flow_1o7okgu" sourceRef="CourierService" targetRef="receivedOrderDelivered" />
+    <bpmn:messageFlow id="Flow_0oqw5lf" sourceRef="sendOrderConfirmedToSiteService" targetRef="SiteService" />
+    <bpmn:messageFlow id="Flow_06gmek8" sourceRef="SiteService" targetRef="orderConfirmed" />
+    <bpmn:messageFlow id="Flow_1pp0z31" sourceRef="Courier" targetRef="CourierService" />
+    <bpmn:messageFlow id="Flow_1tgsobg" sourceRef="Courier" targetRef="CourierService" />
+    <bpmn:messageFlow id="Flow_17d6x5i" sourceRef="Courier" targetRef="CourierService" />
+  </bpmn:collaboration>
+  <bpmn:process id="PizzaOrderByCustomer" name="Заказ пиццы (клиент)" isExecutable="false">
+    <bpmn:task id="choosePizza" name="Выбрать пиццу">
+      <bpmn:incoming>Flow_1hea4lo</bpmn:incoming>
+      <bpmn:outgoing>Flow_1xln121</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="orderPizza" name="Заказать пиццу">
+      <bpmn:incoming>Flow_1xln121</bpmn:incoming>
+      <bpmn:outgoing>Flow_16l1sd7</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:startEvent id="startPizzaOrderByClient" name="Проголодался">
+      <bpmn:outgoing>Flow_1hea4lo</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1x9ilzs" sourceRef="mergeGatewayAfterPaymentOnSite" targetRef="orderConfirmed" />
+    <bpmn:sequenceFlow id="Flow_16l1sd7" sourceRef="orderPizza" targetRef="isPaymentOnSite_client" />
+    <bpmn:sequenceFlow id="Flow_1xln121" sourceRef="choosePizza" targetRef="orderPizza" />
+    <bpmn:sequenceFlow id="Flow_1hea4lo" sourceRef="startPizzaOrderByClient" targetRef="choosePizza" />
+    <bpmn:intermediateThrowEvent id="pizzaDelivered" name="Пицца доставлена">
+      <bpmn:incoming>Flow_0jxv58v</bpmn:incoming>
+      <bpmn:outgoing>Flow_087u3bt</bpmn:outgoing>
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_087u3bt" sourceRef="pizzaDelivered" targetRef="orderIsPaid" />
+    <bpmn:sequenceFlow id="Flow_0jxv58v" sourceRef="orderConfirmed" targetRef="pizzaDelivered" />
+    <bpmn:intermediateCatchEvent id="orderConfirmed" name="Заказ оформлен и принят в работу">
+      <bpmn:incoming>Flow_1x9ilzs</bpmn:incoming>
+      <bpmn:outgoing>Flow_0jxv58v</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1nauth5" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="isPaymentOnSite_client" name="Оплата на сайте?" default="Flow_0rlw16d">
+      <bpmn:incoming>Flow_16l1sd7</bpmn:incoming>
+      <bpmn:outgoing>Flow_14zq3ms</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0rlw16d</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:exclusiveGateway id="mergeGatewayAfterPaymentOnSite">
+      <bpmn:incoming>Flow_034no8b</bpmn:incoming>
+      <bpmn:incoming>Flow_0rlw16d</bpmn:incoming>
+      <bpmn:outgoing>Flow_1x9ilzs</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="payOnSite" name="Оплатить заказ на сайте">
+      <bpmn:incoming>Flow_0ffg328</bpmn:incoming>
+      <bpmn:outgoing>Flow_034no8b</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="directionToPaymentPage" name="Направление на страницу оплаты">
+      <bpmn:incoming>Flow_14zq3ms</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ffg328</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1p0m0r3" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_0rlw16d" name="Нет" sourceRef="isPaymentOnSite_client" targetRef="mergeGatewayAfterPaymentOnSite" />
+    <bpmn:sequenceFlow id="Flow_14zq3ms" name="Да" sourceRef="isPaymentOnSite_client" targetRef="directionToPaymentPage">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${true==false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_034no8b" sourceRef="payOnSite" targetRef="mergeGatewayAfterPaymentOnSite" />
+    <bpmn:sequenceFlow id="Flow_0ffg328" sourceRef="directionToPaymentPage" targetRef="payOnSite" />
+    <bpmn:task id="payToCourier" name="Оплатить заказ курьеру">
+      <bpmn:incoming>Flow_1n1ae90</bpmn:incoming>
+      <bpmn:outgoing>Flow_0z09evk</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="orderIsPaid" name="Заказ оплачен?" default="Flow_1n1ae90">
+      <bpmn:incoming>Flow_087u3bt</bpmn:incoming>
+      <bpmn:outgoing>Flow_1n1ae90</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0aw1a6d</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:exclusiveGateway id="mergeGatewayAfterPaymentToCourier">
+      <bpmn:incoming>Flow_0z09evk</bpmn:incoming>
+      <bpmn:incoming>Flow_0aw1a6d</bpmn:incoming>
+      <bpmn:outgoing>Flow_0k3uy87</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="eatPizza" name="Съесть пиццу">
+      <bpmn:incoming>Flow_0k3uy87</bpmn:incoming>
+      <bpmn:outgoing>Flow_02nts9d</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="endPizzaOrderByClient" name="Голод удален">
+      <bpmn:incoming>Flow_02nts9d</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1n1ae90" name="Нет" sourceRef="orderIsPaid" targetRef="payToCourier" />
+    <bpmn:sequenceFlow id="Flow_0z09evk" sourceRef="payToCourier" targetRef="mergeGatewayAfterPaymentToCourier" />
+    <bpmn:sequenceFlow id="Flow_0aw1a6d" name="Да" sourceRef="orderIsPaid" targetRef="mergeGatewayAfterPaymentToCourier">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${true==false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0k3uy87" sourceRef="mergeGatewayAfterPaymentToCourier" targetRef="eatPizza" />
+    <bpmn:sequenceFlow id="Flow_02nts9d" sourceRef="eatPizza" targetRef="endPizzaOrderByClient" />
+    <bpmn:textAnnotation id="TextAnnotation_0xxqq4g">
+      <bpmn:text>Оформление заказа:
+- выбор способа доставки / указание адреса доставки;
+- выбор способа оплаты (на сайте / курьеру).</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0js4q2g" sourceRef="orderPizza" targetRef="TextAnnotation_0xxqq4g" />
+  </bpmn:process>
+  <bpmn:process id="PizzaOrder" name="Заказ пиццы" isExecutable="true">
+    <bpmn:startEvent id="startPizzaOrder" name="Получен заказ">
+      <bpmn:outgoing>Flow_1flx4e2</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1cg4zee" messageRef="Message_07whviw" />
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="saveOrder" name="Зафиксировать заказ" camunda:class="ru.renue.pikit.masterclass.camunda.tasks.SaveOrderTask">
+      <bpmn:documentation>Сохранение заказа в БД.</bpmn:documentation>
+      <bpmn:incoming>Flow_1flx4e2</bpmn:incoming>
+      <bpmn:outgoing>Flow_02hjbf6</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="gatewayByPaymentOnSite" name="Оплата на сайте?" default="Flow_1o4qzjx">
+      <bpmn:incoming>Flow_02hjbf6</bpmn:incoming>
+      <bpmn:outgoing>Flow_1o4qzjx</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0k0htgv</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sendTask id="sendRequestToAcquiring" name="Запросить эквайринг" camunda:class="ru.renue.pikit.masterclass.camunda.tasks.RequestAcquiringTask">
+      <bpmn:incoming>Flow_1o4qzjx</bpmn:incoming>
+      <bpmn:outgoing>Flow_182szr0</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:eventBasedGateway id="gatewayByAcquiringResult" name="Результат обработки запроса">
+      <bpmn:incoming>Flow_182szr0</bpmn:incoming>
+      <bpmn:outgoing>Flow_073aypm</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0un62jr</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1fu8h1h</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="receivedAcquiringSuccess" name="Получена ссылка на оплату">
+      <bpmn:incoming>Flow_073aypm</bpmn:incoming>
+      <bpmn:outgoing>Flow_0t5chab</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_133211c" messageRef="Message_1mxbgge" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="receivedAcquiringError" name="Ошибка обработки запроса">
+      <bpmn:incoming>Flow_0un62jr</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ppdwe0</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1x85v7e" messageRef="Message_1ebua1t" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sendTask id="sendAcquiringLinkToClientService" name="Направить ссылку на оплату" camunda:class="ru.renue.pikit.masterclass.camunda.tasks.SendPaymentLinkTask">
+      <bpmn:incoming>Flow_0t5chab</bpmn:incoming>
+      <bpmn:outgoing>Flow_1ylsd0u</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:eventBasedGateway id="gatewayByPaymentProcessing">
+      <bpmn:incoming>Flow_1ylsd0u</bpmn:incoming>
+      <bpmn:outgoing>Flow_1jty81u</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0jv8ago</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:exclusiveGateway id="mergeGatewayAfterAcquiring">
+      <bpmn:incoming>Flow_1hqq2uf</bpmn:incoming>
+      <bpmn:incoming>Flow_0ppdwe0</bpmn:incoming>
+      <bpmn:outgoing>Flow_04lcg0q</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="endErrorByAcquiringRequest" name="Ошибка инициировать оплату">
+      <bpmn:extensionElements>
+        <camunda:executionListener class="ru.renue.pikit.masterclass.camunda.tasks.SetErrorToProcessTask" event="start">
+          <camunda:field name="error">
+            <camunda:string>ERR-001</camunda:string>
+          </camunda:field>
+        </camunda:executionListener>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_04lcg0q</bpmn:incoming>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_1iegpz1" errorRef="Error_0jlweha" />
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="gatewayByPaymentStatus" name="Статус платежа" default="Flow_0njvhvd">
+      <bpmn:incoming>Flow_1sxhgso</bpmn:incoming>
+      <bpmn:outgoing>Flow_170ii8f</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0njvhvd</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:callActivity id="callCourier" name="Вызвать курьера" calledElement="CallCourier">
+      <bpmn:incoming>Flow_1urqer4</bpmn:incoming>
+      <bpmn:outgoing>Flow_0dde1jk</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:intermediateCatchEvent id="waitPayment15M" name="15 минут">
+      <bpmn:incoming>Flow_0jv8ago</bpmn:incoming>
+      <bpmn:outgoing>Flow_10v0bqk</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_13py6kv">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P15M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="receivedPaymentInfo" name="Получено событие по платежу">
+      <bpmn:incoming>Flow_1jty81u</bpmn:incoming>
+      <bpmn:outgoing>Flow_1sxhgso</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_09bonch" messageRef="Message_0rxazne" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="endErrorByPaymentCanceled" name="Отмена &#10;оплаты">
+      <bpmn:extensionElements>
+        <camunda:executionListener class="ru.renue.pikit.masterclass.camunda.tasks.SetErrorToProcessTask" event="start">
+          <camunda:field name="error">
+            <camunda:string>ERR-002</camunda:string>
+          </camunda:field>
+        </camunda:executionListener>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0njvhvd</bpmn:incoming>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_0azr8eb" errorRef="Error_1lmgxd9" />
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="mergeGatewayBeforeOrderExecuting">
+      <bpmn:incoming>Flow_170ii8f</bpmn:incoming>
+      <bpmn:incoming>Flow_0k0htgv</bpmn:incoming>
+      <bpmn:outgoing>Flow_1o10zrh</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:intermediateCatchEvent id="acquiringTimeout" name="Таймаут ожидания">
+      <bpmn:incoming>Flow_1fu8h1h</bpmn:incoming>
+      <bpmn:outgoing>Flow_1hqq2uf</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_1ynqc2v">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT10S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="receivedOrderDelivered" name="Заказ доставлен">
+      <bpmn:incoming>Flow_1ltiagw</bpmn:incoming>
+      <bpmn:outgoing>Flow_0lgjozt</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_09t1v49" messageRef="Message_0cr0f9s" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sendTask id="sendOrderToExecution" name="Передать заказ в работу" camunda:class="ru.renue.pikit.masterclass.camunda.tasks.SendOrderToExecutionTask">
+      <bpmn:incoming>Flow_1o10zrh</bpmn:incoming>
+      <bpmn:outgoing>Flow_0lz5rnz</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:sequenceFlow id="Flow_0lgjozt" sourceRef="receivedOrderDelivered" targetRef="gatewayByPaymentToCourier" />
+    <bpmn:sequenceFlow id="Flow_1o10zrh" sourceRef="mergeGatewayBeforeOrderExecuting" targetRef="sendOrderToExecution" />
+    <bpmn:sequenceFlow id="Flow_0lz5rnz" sourceRef="sendOrderToExecution" targetRef="sendOrderConfirmedToSiteService" />
+    <bpmn:sequenceFlow id="Flow_0dde1jk" sourceRef="callCourier" targetRef="receivedOrderToDelivery" />
+    <bpmn:sequenceFlow id="Flow_1ltiagw" sourceRef="receivedOrderToDelivery" targetRef="receivedOrderDelivered" />
+    <bpmn:sequenceFlow id="Flow_170ii8f" name="Успешно" sourceRef="gatewayByPaymentStatus" targetRef="mergeGatewayBeforeOrderExecuting">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${paymentStatus == 'SUCCESS'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0k0htgv" name="Нет" sourceRef="gatewayByPaymentOnSite" targetRef="mergeGatewayBeforeOrderExecuting">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${isPaymentOnSite == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0njvhvd" name="Отменен" sourceRef="gatewayByPaymentStatus" targetRef="endErrorByPaymentCanceled" />
+    <bpmn:sequenceFlow id="Flow_04lcg0q" sourceRef="mergeGatewayAfterAcquiring" targetRef="endErrorByAcquiringRequest" />
+    <bpmn:sequenceFlow id="Flow_0ppdwe0" sourceRef="receivedAcquiringError" targetRef="mergeGatewayAfterAcquiring" />
+    <bpmn:sequenceFlow id="Flow_1hqq2uf" sourceRef="acquiringTimeout" targetRef="mergeGatewayAfterAcquiring" />
+    <bpmn:sequenceFlow id="Flow_10v0bqk" sourceRef="waitPayment15M" targetRef="endErrorByCustomerNotPaied" />
+    <bpmn:sequenceFlow id="Flow_0jv8ago" sourceRef="gatewayByPaymentProcessing" targetRef="waitPayment15M" />
+    <bpmn:sequenceFlow id="Flow_1sxhgso" sourceRef="receivedPaymentInfo" targetRef="gatewayByPaymentStatus" />
+    <bpmn:sequenceFlow id="Flow_1jty81u" sourceRef="gatewayByPaymentProcessing" targetRef="receivedPaymentInfo" />
+    <bpmn:sequenceFlow id="Flow_1ylsd0u" sourceRef="sendAcquiringLinkToClientService" targetRef="gatewayByPaymentProcessing" />
+    <bpmn:sequenceFlow id="Flow_0t5chab" sourceRef="receivedAcquiringSuccess" targetRef="sendAcquiringLinkToClientService" />
+    <bpmn:sequenceFlow id="Flow_1fu8h1h" sourceRef="gatewayByAcquiringResult" targetRef="acquiringTimeout" />
+    <bpmn:sequenceFlow id="Flow_0un62jr" sourceRef="gatewayByAcquiringResult" targetRef="receivedAcquiringError" />
+    <bpmn:sequenceFlow id="Flow_073aypm" sourceRef="gatewayByAcquiringResult" targetRef="receivedAcquiringSuccess" />
+    <bpmn:sequenceFlow id="Flow_182szr0" sourceRef="sendRequestToAcquiring" targetRef="gatewayByAcquiringResult" />
+    <bpmn:sequenceFlow id="Flow_1o4qzjx" name="Да" sourceRef="gatewayByPaymentOnSite" targetRef="sendRequestToAcquiring" />
+    <bpmn:sequenceFlow id="Flow_02hjbf6" sourceRef="saveOrder" targetRef="gatewayByPaymentOnSite" />
+    <bpmn:sequenceFlow id="Flow_1flx4e2" sourceRef="startPizzaOrder" targetRef="saveOrder" />
+    <bpmn:sequenceFlow id="Flow_1urqer4" sourceRef="sendOrderConfirmedToSiteService" targetRef="callCourier" />
+    <bpmn:intermediateCatchEvent id="receivedOrderToDelivery" name="Заказ передан в доставку">
+      <bpmn:incoming>Flow_0dde1jk</bpmn:incoming>
+      <bpmn:outgoing>Flow_1ltiagw</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0a6nt86" messageRef="Message_1y5os3t" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_08wzjjl" name="Нет" sourceRef="gatewayByPaymentToCourier" targetRef="mergeGatewayBeforeEnd" />
+    <bpmn:sequenceFlow id="Flow_0f7v0bm" name="Да" sourceRef="gatewayByPaymentToCourier" targetRef="gatewayByCustomerPaidOrder">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${isPaymentOnSite == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1k2vfip" sourceRef="gatewayByCustomerPaidOrder" targetRef="receivedCustomerPaid" />
+    <bpmn:sequenceFlow id="Flow_1mfzrnd" sourceRef="gatewayByCustomerPaidOrder" targetRef="receivedCustomerNotPay" />
+    <bpmn:sequenceFlow id="Flow_1f5hbrk" sourceRef="receivedCustomerNotPay" targetRef="addCustomerToBlacklist" />
+    <bpmn:sequenceFlow id="Flow_1gc5ncc" sourceRef="receivedCustomerPaid" targetRef="mergeGatewayBeforeEnd" />
+    <bpmn:sequenceFlow id="Flow_17k7k3k" sourceRef="addCustomerToBlacklist" targetRef="mergeGatewayBeforeEnd" />
+    <bpmn:exclusiveGateway id="gatewayByPaymentToCourier" name="Оплата курьеру?" default="Flow_08wzjjl">
+      <bpmn:incoming>Flow_0lgjozt</bpmn:incoming>
+      <bpmn:outgoing>Flow_0f7v0bm</bpmn:outgoing>
+      <bpmn:outgoing>Flow_08wzjjl</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:eventBasedGateway id="gatewayByCustomerPaidOrder" name="Клиент оплатил заказ?">
+      <bpmn:incoming>Flow_0f7v0bm</bpmn:incoming>
+      <bpmn:outgoing>Flow_1mfzrnd</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1k2vfip</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="receivedCustomerNotPay" name="Клиент НЕ оплатил заказ">
+      <bpmn:incoming>Flow_1mfzrnd</bpmn:incoming>
+      <bpmn:outgoing>Flow_1f5hbrk</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1lemvej" messageRef="Message_0rvo9k9" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="addCustomerToBlacklist" name="Заблокировать клиента" camunda:class="ru.renue.pikit.masterclass.camunda.tasks.AddClientToBlackListTask">
+      <bpmn:incoming>Flow_1f5hbrk</bpmn:incoming>
+      <bpmn:outgoing>Flow_17k7k3k</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:intermediateCatchEvent id="receivedCustomerPaid" name="Заказ оплачен">
+      <bpmn:incoming>Flow_1k2vfip</bpmn:incoming>
+      <bpmn:outgoing>Flow_1gc5ncc</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0l6asyo" messageRef="Message_0zjmwl4" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="endSuccessPizzaOrder" name="Заказ выполнен">
+      <bpmn:incoming>Flow_1nge5xg</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="mergeGatewayBeforeEnd">
+      <bpmn:incoming>Flow_08wzjjl</bpmn:incoming>
+      <bpmn:incoming>Flow_17k7k3k</bpmn:incoming>
+      <bpmn:incoming>Flow_1gc5ncc</bpmn:incoming>
+      <bpmn:outgoing>Flow_1nge5xg</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_1nge5xg" sourceRef="mergeGatewayBeforeEnd" targetRef="endSuccessPizzaOrder" />
+    <bpmn:endEvent id="endErrorByCustomerNotPaied" name="Клиент не оплатил заказ">
+      <bpmn:incoming>Flow_10v0bqk</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:subProcess id="UpdateProductionStatusSubprocess" name="Обновлениие производственного статуса заказа" triggeredByEvent="true">
+      <bpmn:startEvent id="receivedProductionStatus" name="Получен &#10;новый &#10;статус" isInterrupting="false">
+        <bpmn:outgoing>Flow_0213z3j</bpmn:outgoing>
+        <bpmn:messageEventDefinition id="MessageEventDefinition_0ccc4hb" messageRef="Message_00567qd" />
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_0213z3j" sourceRef="receivedProductionStatus" targetRef="saveProductionStatus" />
+      <bpmn:endEvent id="endUpdateProductionStatusSubprocess" name="Статус зафиксирован">
+        <bpmn:incoming>Flow_0go8n95</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_0go8n95" sourceRef="saveProductionStatus" targetRef="endUpdateProductionStatusSubprocess" />
+      <bpmn:serviceTask id="saveProductionStatus" name="Обновить статус заказа" camunda:class="ru.renue.pikit.masterclass.camunda.tasks.UpdateProductionStatusTask">
+        <bpmn:incoming>Flow_0213z3j</bpmn:incoming>
+        <bpmn:outgoing>Flow_0go8n95</bpmn:outgoing>
+      </bpmn:serviceTask>
+    </bpmn:subProcess>
+    <bpmn:subProcess id="ErrorSubProcess" name="Направление ошибок" triggeredByEvent="true">
+      <bpmn:endEvent id="endErrorSubProcess" name="Ошибка направлена">
+        <bpmn:incoming>Flow_0etoaiv</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_0etoaiv" sourceRef="sendErrorToSiteService" targetRef="endErrorSubProcess" />
+      <bpmn:sequenceFlow id="Flow_160kl47" sourceRef="startErrorSubProcess" targetRef="sendErrorToSiteService" />
+      <bpmn:startEvent id="startErrorSubProcess" name="Получена ошибка">
+        <bpmn:outgoing>Flow_160kl47</bpmn:outgoing>
+        <bpmn:errorEventDefinition id="ErrorEventDefinition_04xxg2a" errorRef="Error_1i6xbr6" />
+      </bpmn:startEvent>
+      <bpmn:sendTask id="sendErrorToSiteService" name="Направить ошибку клиенту" camunda:class="ru.renue.pikit.masterclass.camunda.tasks.SendErrorToClientTask">
+        <bpmn:incoming>Flow_160kl47</bpmn:incoming>
+        <bpmn:outgoing>Flow_0etoaiv</bpmn:outgoing>
+      </bpmn:sendTask>
+    </bpmn:subProcess>
+    <bpmn:intermediateThrowEvent id="sendOrderConfirmedToSiteService" name="Информиров. об успешном приеме заказа">
+      <bpmn:incoming>Flow_0lz5rnz</bpmn:incoming>
+      <bpmn:outgoing>Flow_1urqer4</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0rixkmv" camunda:class="ru.renue.pikit.masterclass.camunda.tasks.NotifyAboutSuccessOrderTask" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:textAnnotation id="TextAnnotation_0lek8dt">
+      <bpmn:text>Обновление ссылки на оплату</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0zsi7ei" sourceRef="receivedAcquiringSuccess" targetRef="TextAnnotation_0lek8dt" />
+  </bpmn:process>
+  <bpmn:message id="Message_07whviw" name="orderMsg" />
+  <bpmn:message id="Message_1mxbgge" name="acquiringSuccessMsg" />
+  <bpmn:message id="Message_1ebua1t" name="acquiringErrorMsg" />
+  <bpmn:message id="Message_0rxazne" name="paymentMsg" />
+  <bpmn:message id="Message_1y5os3t" name="orderToDeliveryMsg" />
+  <bpmn:message id="Message_0cr0f9s" name="orderDeliveredMsg" />
+  <bpmn:message id="Message_0zjmwl4" name="customerPaidMsg" />
+  <bpmn:message id="Message_0rvo9k9" name="customerNotPaidMsg" />
+  <bpmn:message id="Message_00567qd" name="productionStatusMsg" />
+  <bpmn:error id="Error_0jlweha" name="errorByAcquiringRequest" errorCode="ERR-001" />
+  <bpmn:error id="Error_0pboclv" name="errorByNotPaied" errorCode="ERR-002" />
+  <bpmn:error id="Error_1lmgxd9" name="errorByPaymentCanceled" errorCode="ERR-002" />
+  <bpmn:error id="Error_1i6xbr6" name="needSendError" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="PizzaOrderCollaboration">
+      <bpmndi:BPMNShape id="Participant_1y8hdnp_di" bpmnElement="Customer" isHorizontal="true" bioc:stroke="rgb(67, 160, 71)" bioc:fill="rgb(200, 230, 201)">
+        <dc:Bounds x="160" y="80" width="3230" height="378" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1hea4lo_di" bpmnElement="Flow_1hea4lo">
+        <di:waypoint x="275" y="265" />
+        <di:waypoint x="330" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1xln121_di" bpmnElement="Flow_1xln121">
+        <di:waypoint x="430" y="265" />
+        <di:waypoint x="490" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16l1sd7_di" bpmnElement="Flow_16l1sd7">
+        <di:waypoint x="590" y="265" />
+        <di:waypoint x="1275" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1x9ilzs_di" bpmnElement="Flow_1x9ilzs">
+        <di:waypoint x="1725" y="265" />
+        <di:waypoint x="2407" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_087u3bt_di" bpmnElement="Flow_087u3bt">
+        <di:waypoint x="2568" y="265" />
+        <di:waypoint x="2615" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0jxv58v_di" bpmnElement="Flow_0jxv58v">
+        <di:waypoint x="2443" y="265" />
+        <di:waypoint x="2532" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0rlw16d_di" bpmnElement="Flow_0rlw16d">
+        <di:waypoint x="1325" y="265" />
+        <di:waypoint x="1675" y="265" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1331" y="271" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_14zq3ms_di" bpmnElement="Flow_14zq3ms">
+        <di:waypoint x="1300" y="290" />
+        <di:waypoint x="1300" y="380" />
+        <di:waypoint x="1392" y="380" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1334" y="386" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_034no8b_di" bpmnElement="Flow_034no8b">
+        <di:waypoint x="1600" y="380" />
+        <di:waypoint x="1700" y="380" />
+        <di:waypoint x="1700" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ffg328_di" bpmnElement="Flow_0ffg328">
+        <di:waypoint x="1428" y="380" />
+        <di:waypoint x="1500" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1n1ae90_di" bpmnElement="Flow_1n1ae90">
+        <di:waypoint x="2665" y="265" />
+        <di:waypoint x="2750" y="265" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2672" y="271" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0z09evk_di" bpmnElement="Flow_0z09evk">
+        <di:waypoint x="2850" y="265" />
+        <di:waypoint x="2935" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0aw1a6d_di" bpmnElement="Flow_0aw1a6d">
+        <di:waypoint x="2640" y="290" />
+        <di:waypoint x="2640" y="380" />
+        <di:waypoint x="2960" y="380" />
+        <di:waypoint x="2960" y="290" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2675" y="386" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0k3uy87_di" bpmnElement="Flow_0k3uy87">
+        <di:waypoint x="2985" y="265" />
+        <di:waypoint x="3070" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_02nts9d_di" bpmnElement="Flow_02nts9d">
+        <di:waypoint x="3170" y="265" />
+        <di:waypoint x="3222" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Activity_0nv6nxp_di" bpmnElement="choosePizza">
+        <dc:Bounds x="330" y="225" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0hg9geo_di" bpmnElement="orderPizza">
+        <dc:Bounds x="490" y="225" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="startPizzaOrderByClient">
+        <dc:Bounds x="239" y="247" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="221" y="290" width="73" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_0xxqq4g_di" bpmnElement="TextAnnotation_0xxqq4g">
+        <dc:Bounds x="490" y="110" width="340" height="54" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1exm07w_di" bpmnElement="pizzaDelivered">
+        <dc:Bounds x="2532" y="247" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2522" y="290" width="59" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1v0b2lo_di" bpmnElement="orderConfirmed" bioc:stroke="black" bioc:fill="white">
+        <dc:Bounds x="2407" y="247" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2382" y="204" width="86" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1010j1d_di" bpmnElement="isPaymentOnSite_client" isMarkerVisible="true">
+        <dc:Bounds x="1275" y="240" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1273" y="203" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1o47xl8_di" bpmnElement="mergeGatewayAfterPaymentOnSite" isMarkerVisible="true">
+        <dc:Bounds x="1675" y="240" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0j3enp2_di" bpmnElement="payOnSite">
+        <dc:Bounds x="1500" y="340" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0dutlcm_di" bpmnElement="directionToPaymentPage">
+        <dc:Bounds x="1392" y="362" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1366" y="332" width="88" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_151cv07_di" bpmnElement="payToCourier">
+        <dc:Bounds x="2750" y="225" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_07jwt0v_di" bpmnElement="orderIsPaid" isMarkerVisible="true">
+        <dc:Bounds x="2615" y="240" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2599" y="216" width="81" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_05ymrts_di" bpmnElement="mergeGatewayAfterPaymentToCourier" isMarkerVisible="true">
+        <dc:Bounds x="2935" y="240" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1a3ymk6_di" bpmnElement="eatPizza">
+        <dc:Bounds x="3070" y="225" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1ar3olj_di" bpmnElement="endPizzaOrderByClient">
+        <dc:Bounds x="3222" y="247" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3206" y="290" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0js4q2g_di" bpmnElement="Association_0js4q2g">
+        <di:waypoint x="540" y="225" />
+        <di:waypoint x="540" y="164" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Participant_0xe790u_di" bpmnElement="SiteService" isHorizontal="true">
+        <dc:Bounds x="490" y="640" width="1980" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_01k1yy2_di" bpmnElement="OrderService" isHorizontal="true">
+        <dc:Bounds x="443" y="880" width="3007" height="690" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1nge5xg_di" bpmnElement="Flow_1nge5xg">
+        <di:waypoint x="3325" y="1025" />
+        <di:waypoint x="3362" y="1025" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17k7k3k_di" bpmnElement="Flow_17k7k3k">
+        <di:waypoint x="3240" y="1250" />
+        <di:waypoint x="3300" y="1250" />
+        <di:waypoint x="3300" y="1050" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1gc5ncc_di" bpmnElement="Flow_1gc5ncc">
+        <di:waypoint x="3208" y="1140" />
+        <di:waypoint x="3300" y="1140" />
+        <di:waypoint x="3300" y="1050" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1f5hbrk_di" bpmnElement="Flow_1f5hbrk">
+        <di:waypoint x="3088" y="1250" />
+        <di:waypoint x="3140" y="1250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1mfzrnd_di" bpmnElement="Flow_1mfzrnd">
+        <di:waypoint x="2990" y="1165" />
+        <di:waypoint x="2990" y="1250" />
+        <di:waypoint x="3052" y="1250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1k2vfip_di" bpmnElement="Flow_1k2vfip">
+        <di:waypoint x="3015" y="1140" />
+        <di:waypoint x="3172" y="1140" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2747" y="982" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0f7v0bm_di" bpmnElement="Flow_0f7v0bm">
+        <di:waypoint x="2880" y="1050" />
+        <di:waypoint x="2880" y="1140" />
+        <di:waypoint x="2965" y="1140" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2901" y="1146" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_08wzjjl_di" bpmnElement="Flow_08wzjjl">
+        <di:waypoint x="2905" y="1025" />
+        <di:waypoint x="3275" y="1025" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2903" y="1031" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1urqer4_di" bpmnElement="Flow_1urqer4">
+        <di:waypoint x="2443" y="1025" />
+        <di:waypoint x="2520" y="1025" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1flx4e2_di" bpmnElement="Flow_1flx4e2">
+        <di:waypoint x="558" y="1025" />
+        <di:waypoint x="613" y="1025" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_02hjbf6_di" bpmnElement="Flow_02hjbf6">
+        <di:waypoint x="713" y="1025" />
+        <di:waypoint x="775" y="1025" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1o4qzjx_di" bpmnElement="Flow_1o4qzjx">
+        <di:waypoint x="825" y="1025" />
+        <di:waypoint x="890" y="1025" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="831" y="1031" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_182szr0_di" bpmnElement="Flow_182szr0">
+        <di:waypoint x="990" y="1025" />
+        <di:waypoint x="1055" y="1025" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_073aypm_di" bpmnElement="Flow_073aypm">
+        <di:waypoint x="1105" y="1025" />
+        <di:waypoint x="1172" y="1025" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0un62jr_di" bpmnElement="Flow_0un62jr">
+        <di:waypoint x="1080" y="1050" />
+        <di:waypoint x="1080" y="1140" />
+        <di:waypoint x="1282" y="1140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1fu8h1h_di" bpmnElement="Flow_1fu8h1h">
+        <di:waypoint x="1080" y="1050" />
+        <di:waypoint x="1080" y="1250" />
+        <di:waypoint x="1282" y="1250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0t5chab_di" bpmnElement="Flow_0t5chab">
+        <di:waypoint x="1208" y="1025" />
+        <di:waypoint x="1360" y="1025" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ylsd0u_di" bpmnElement="Flow_1ylsd0u">
+        <di:waypoint x="1460" y="1025" />
+        <di:waypoint x="1535" y="1025" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1jty81u_di" bpmnElement="Flow_1jty81u">
+        <di:waypoint x="1585" y="1025" />
+        <di:waypoint x="1822" y="1025" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1sxhgso_di" bpmnElement="Flow_1sxhgso">
+        <di:waypoint x="1858" y="1025" />
+        <di:waypoint x="1905" y="1025" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0jv8ago_di" bpmnElement="Flow_0jv8ago">
+        <di:waypoint x="1560" y="1050" />
+        <di:waypoint x="1560" y="1140" />
+        <di:waypoint x="1622" y="1140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10v0bqk_di" bpmnElement="Flow_10v0bqk">
+        <di:waypoint x="1658" y="1140" />
+        <di:waypoint x="1722" y="1140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1hqq2uf_di" bpmnElement="Flow_1hqq2uf">
+        <di:waypoint x="1318" y="1250" />
+        <di:waypoint x="1385" y="1250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ppdwe0_di" bpmnElement="Flow_0ppdwe0">
+        <di:waypoint x="1318" y="1140" />
+        <di:waypoint x="1410" y="1140" />
+        <di:waypoint x="1410" y="1225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_04lcg0q_di" bpmnElement="Flow_04lcg0q">
+        <di:waypoint x="1435" y="1250" />
+        <di:waypoint x="1502" y="1250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0njvhvd_di" bpmnElement="Flow_0njvhvd">
+        <di:waypoint x="1930" y="1050" />
+        <di:waypoint x="1930" y="1140" />
+        <di:waypoint x="2032" y="1140" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1957" y="1146" width="46" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0k0htgv_di" bpmnElement="Flow_0k0htgv">
+        <di:waypoint x="800" y="1050" />
+        <di:waypoint x="800" y="1360" />
+        <di:waypoint x="2140" y="1360" />
+        <di:waypoint x="2140" y="1050" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="835" y="1366" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_170ii8f_di" bpmnElement="Flow_170ii8f">
+        <di:waypoint x="1955" y="1025" />
+        <di:waypoint x="2115" y="1025" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1958" y="1031" width="44" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ltiagw_di" bpmnElement="Flow_1ltiagw">
+        <di:waypoint x="2708" y="1025" />
+        <di:waypoint x="2782" y="1025" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0dde1jk_di" bpmnElement="Flow_0dde1jk">
+        <di:waypoint x="2620" y="1025" />
+        <di:waypoint x="2672" y="1025" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0lz5rnz_di" bpmnElement="Flow_0lz5rnz">
+        <di:waypoint x="2330" y="1025" />
+        <di:waypoint x="2407" y="1025" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1o10zrh_di" bpmnElement="Flow_1o10zrh">
+        <di:waypoint x="2165" y="1025" />
+        <di:waypoint x="2230" y="1025" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0lgjozt_di" bpmnElement="Flow_0lgjozt">
+        <di:waypoint x="2818" y="1025" />
+        <di:waypoint x="2855" y="1025" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_0wm5cch_di" bpmnElement="startPizzaOrder">
+        <dc:Bounds x="522" y="1007" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="504" y="1050" width="74" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0dl1m7v_di" bpmnElement="saveOrder">
+        <dc:Bounds x="613" y="985" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_158mrfl_di" bpmnElement="gatewayByPaymentOnSite" isMarkerVisible="true">
+        <dc:Bounds x="775" y="1000" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="773" y="970" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_03p4h9u_di" bpmnElement="sendRequestToAcquiring">
+        <dc:Bounds x="890" y="985" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1tbaj9y_di" bpmnElement="gatewayByAcquiringResult">
+        <dc:Bounds x="1055" y="1000" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1054" y="955" width="53" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0yxu1fp_di" bpmnElement="receivedAcquiringSuccess">
+        <dc:Bounds x="1172" y="1007" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1146" y="1050" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_122f5oz_di" bpmnElement="receivedAcquiringError">
+        <dc:Bounds x="1282" y="1122" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1274" y="1165" width="53" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_04rinkp_di" bpmnElement="sendAcquiringLinkToClientService">
+        <dc:Bounds x="1360" y="985" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_05072u0_di" bpmnElement="gatewayByPaymentProcessing">
+        <dc:Bounds x="1535" y="1000" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_16jck4z_di" bpmnElement="mergeGatewayAfterAcquiring" isMarkerVisible="true">
+        <dc:Bounds x="1385" y="1225" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0jb03hv_di" bpmnElement="endErrorByAcquiringRequest">
+        <dc:Bounds x="1502" y="1232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1486" y="1275" width="72" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1eezp18_di" bpmnElement="gatewayByPaymentStatus" isMarkerVisible="true">
+        <dc:Bounds x="1905" y="1000" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1889" y="976" width="81" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0svfai9_di" bpmnElement="callCourier">
+        <dc:Bounds x="2520" y="985" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0hxxuc1_di" bpmnElement="waitPayment15M">
+        <dc:Bounds x="1622" y="1122" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1617" y="1165" width="47" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_17im8ed_di" bpmnElement="receivedPaymentInfo">
+        <dc:Bounds x="1822" y="1007" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1811" y="1050" width="59" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_15ayc5k_di" bpmnElement="endErrorByPaymentCanceled" bioc:stroke="black" bioc:fill="white">
+        <dc:Bounds x="2032" y="1122" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2030" y="1165" width="40" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1v79v5p_di" bpmnElement="mergeGatewayBeforeOrderExecuting" isMarkerVisible="true">
+        <dc:Bounds x="2115" y="1000" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1lwynlc_di" bpmnElement="acquiringTimeout">
+        <dc:Bounds x="1282" y="1232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1275" y="1275" width="51" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_12u09vt_di" bpmnElement="receivedOrderDelivered" bioc:stroke="black" bioc:fill="white">
+        <dc:Bounds x="2782" y="1007" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2758" y="1050" width="86" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1wjzykm_di" bpmnElement="sendOrderToExecution">
+        <dc:Bounds x="2230" y="985" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1sql1rh_di" bpmnElement="receivedOrderToDelivery">
+        <dc:Bounds x="2672" y="1007" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2651" y="977" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1lkixlm_di" bpmnElement="gatewayByPaymentToCourier" isMarkerVisible="true">
+        <dc:Bounds x="2855" y="1000" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2836" y="976" width="87" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_05jwge2_di" bpmnElement="gatewayByCustomerPaidOrder">
+        <dc:Bounds x="2965" y="1115" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2950" y="1085" width="82" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_19q7ibw_di" bpmnElement="receivedCustomerNotPay">
+        <dc:Bounds x="3052" y="1232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3034" y="1275" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0nfpeav_di" bpmnElement="addCustomerToBlacklist">
+        <dc:Bounds x="3140" y="1210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1cuh8ax_di" bpmnElement="receivedCustomerPaid">
+        <dc:Bounds x="3172" y="1122" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3153" y="1165" width="75" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0qocmch_di" bpmnElement="endSuccessPizzaOrder">
+        <dc:Bounds x="3362" y="1007" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3339" y="1050" width="83" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1a0uc85_di" bpmnElement="mergeGatewayBeforeEnd" isMarkerVisible="true">
+        <dc:Bounds x="3275" y="1000" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_00qh74t_di" bpmnElement="endErrorByCustomerNotPaied">
+        <dc:Bounds x="1722" y="1122" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1704" y="1165" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0w8yy3t_di" bpmnElement="sendOrderConfirmedToSiteService">
+        <dc:Bounds x="2407" y="1007" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2383" y="1050" width="87" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1yqxfeg_di" bpmnElement="UpdateProductionStatusSubprocess" isExpanded="true">
+        <dc:Bounds x="2330" y="1390" width="320" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0go8n95_di" bpmnElement="Flow_0go8n95">
+        <di:waypoint x="2535" y="1490" />
+        <di:waypoint x="2582" y="1490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0213z3j_di" bpmnElement="Flow_0213z3j">
+        <di:waypoint x="2388" y="1490" />
+        <di:waypoint x="2435" y="1490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_1rwkoyj_di" bpmnElement="receivedProductionStatus">
+        <dc:Bounds x="2352" y="1472" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2348" y="1422" width="44" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1bkruq9_di" bpmnElement="endUpdateProductionStatusSubprocess">
+        <dc:Bounds x="2582" y="1472" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2563" y="1515" width="74" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1j4pa6h_di" bpmnElement="saveProductionStatus">
+        <dc:Bounds x="2435" y="1450" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ugkrkm_di" bpmnElement="ErrorSubProcess" isExpanded="true">
+        <dc:Bounds x="1480" y="1390" width="320" height="130" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_160kl47_di" bpmnElement="Flow_160kl47">
+        <di:waypoint x="1538" y="1460" />
+        <di:waypoint x="1585" y="1460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0etoaiv_di" bpmnElement="Flow_0etoaiv">
+        <di:waypoint x="1685" y="1460" />
+        <di:waypoint x="1732" y="1460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_19bj3br_di" bpmnElement="endErrorSubProcess">
+        <dc:Bounds x="1732" y="1442" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1720" y="1485" width="61" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_16ukdef_di" bpmnElement="startErrorSubProcess">
+        <dc:Bounds x="1502" y="1442" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1495" y="1485" width="50" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_076jl2d_di" bpmnElement="sendErrorToSiteService">
+        <dc:Bounds x="1585" y="1420" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_0lek8dt_di" bpmnElement="TextAnnotation_0lek8dt">
+        <dc:Bounds x="1070" y="900" width="110" height="39" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0zsi7ei_di" bpmnElement="Association_0zsi7ei">
+        <di:waypoint x="1178" y="1011" />
+        <di:waypoint x="1125" y="943" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Participant_0ipxtj9_di" bpmnElement="Acquiring" isHorizontal="true" bioc:stroke="rgb(251, 140, 0)" bioc:fill="rgb(255, 224, 178)">
+        <dc:Bounds x="890" y="760" width="1000" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_194wlvi_di" bpmnElement="PromService" isHorizontal="true">
+        <dc:Bounds x="2240" y="1630" width="500" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_0avjfch_di" bpmnElement="Courier" isHorizontal="true" bioc:stroke="rgb(67, 160, 71)" bioc:fill="rgb(200, 230, 201)">
+        <dc:Bounds x="2760" y="520" width="460" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_17kmec2_di" bpmnElement="CourierService" isHorizontal="true">
+        <dc:Bounds x="2760" y="640" width="630" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_17uru3b_di" bpmnElement="Flow_17uru3b">
+        <di:waypoint x="540" y="305" />
+        <di:waypoint x="540" y="640" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0n8458v_di" bpmnElement="Flow_0n8458v">
+        <di:waypoint x="540" y="700" />
+        <di:waypoint x="540" y="1007" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ab3q70_di" bpmnElement="Flow_1ab3q70">
+        <di:waypoint x="1410" y="985" />
+        <di:waypoint x="1410" y="700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_03woacl_di" bpmnElement="Flow_03woacl">
+        <di:waypoint x="940" y="985" />
+        <di:waypoint x="940" y="820" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12bn37k_di" bpmnElement="Flow_12bn37k">
+        <di:waypoint x="1190" y="820" />
+        <di:waypoint x="1190" y="1007" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1pauxbl_di" bpmnElement="Flow_1pauxbl">
+        <di:waypoint x="1300" y="820" />
+        <di:waypoint x="1300" y="1122" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_07tug43_di" bpmnElement="Flow_07tug43">
+        <di:waypoint x="1840" y="820" />
+        <di:waypoint x="1840" y="1007" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0mo7787_di" bpmnElement="Flow_0mo7787">
+        <di:waypoint x="1410" y="640" />
+        <di:waypoint x="1410" y="398" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0amh2pn_di" bpmnElement="Flow_0amh2pn">
+        <di:waypoint x="1550" y="420" />
+        <di:waypoint x="1550" y="760" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1kh629l_di" bpmnElement="Flow_1kh629l">
+        <di:waypoint x="2280" y="1065" />
+        <di:waypoint x="2280" y="1630" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_06vq83o_di" bpmnElement="Flow_06vq83o">
+        <di:waypoint x="2690" y="1630" />
+        <di:waypoint x="2690" y="1043" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1yyv5l7_di" bpmnElement="Flow_1yyv5l7">
+        <di:waypoint x="2800" y="305" />
+        <di:waypoint x="2800" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1oe5fdj_di" bpmnElement="Flow_1oe5fdj">
+        <di:waypoint x="2370" y="1630" />
+        <di:waypoint x="2370" y="1508" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0642a8v_di" bpmnElement="Flow_0642a8v">
+        <di:waypoint x="3190" y="700" />
+        <di:waypoint x="3190" y="1122" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0l2w34v_di" bpmnElement="Flow_0l2w34v">
+        <di:waypoint x="3070" y="700" />
+        <di:waypoint x="3070" y="1232" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1o7okgu_di" bpmnElement="Flow_1o7okgu">
+        <di:waypoint x="2800" y="700" />
+        <di:waypoint x="2800" y="1007" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0oqw5lf_di" bpmnElement="Flow_0oqw5lf">
+        <di:waypoint x="2425" y="1007" />
+        <di:waypoint x="2425" y="700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_06gmek8_di" bpmnElement="Flow_06gmek8">
+        <di:waypoint x="2425" y="640" />
+        <di:waypoint x="2425" y="283" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1pp0z31_di" bpmnElement="Flow_1pp0z31">
+        <di:waypoint x="2800" y="580" />
+        <di:waypoint x="2800" y="640" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1tgsobg_di" bpmnElement="Flow_1tgsobg">
+        <di:waypoint x="3075" y="580" />
+        <di:waypoint x="3075" y="640" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17d6x5i_di" bpmnElement="Flow_17d6x5i">
+        <di:waypoint x="3190" y="580" />
+        <di:waypoint x="3190" y="640" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
