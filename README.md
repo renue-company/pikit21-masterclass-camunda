@@ -29,7 +29,7 @@ For testing manually: import Postman collection ./postman/PikIT Camunda Mastercl
 to Postman (https://www.postman.com/)
 
 ### Output
-After starting your processes, go to ./executions folder for looking your executed tasks. Foler per process. 
-Use folder name (it's business-process-key of your process, 20210313-1829-0001 for example) to find your history instances 
-in Excamad (http://localhost:9090/?#/history?baseurl=http%3A%2F%2Flocalhost%3A8080%2Fengine-rest%2F) 
+After starting your processes, go to ./executions folder for looking your executed tasks. Folder per process.<br/>
+Use folder name (it's business-process-key of your process, 20210313-1829-0001 for example) to find your history instances<br/>
+in Excamad (http://localhost:9090/?#/history?baseurl=http%3A%2F%2Flocalhost%3A8080%2Fengine-rest%2F)<br/>
 or running instances in Cockpit (http://localhost:8080/camunda/app/cockpit/default/#/processes)
